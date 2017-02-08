@@ -19,12 +19,13 @@ class ConfigModuleException extends \Exception {}
  * Производит контроль целостности конфига, его наличия, задает значения по-умолчанию.
  * Предоставляет простой объектный стиль доступа или array access к конфигу
  */
-class Config implements \ArrayAccess, \Countable
+class Config implements \ArrayAccess, \Countable, \IteratorAggregate
 {
     /**
      * @var array Массив конфигурации
      */
     protected $_configValues = [];
+
     /**
      * Config constructor.
      * @param $configFilename путь до файла конфигурации
@@ -36,15 +37,18 @@ class Config implements \ArrayAccess, \Countable
     public function __construct($configFilename, array $defaultValues = [], array $requiredParams = [], $isConfigRequired = true)
     {
         $this->_configValues = $this->readConfig($configFilename);
+
         // Подстановка дефолтных значений при их отсутствии
         foreach ($defaultValues as $param => $value) {
             $this->_configValues[$param] = isset($this->_configValues[$param]) ? $this->_configValues[$param] : $value;
         }
+
         $notFoundRequiredParams = array_diff($requiredParams, array_keys($this->_configValues));
         if (!empty(($notFoundRequiredParams))) {
             throw new ConfigModuleException("Required param(s) \"" . implode(', ', $notFoundRequiredParams) . "\" has not been set.", Errors::ERROR_CORE);
         }
     }
+
     /**
      * Читает конфиг из файла в массив
      * @param $configFilename
@@ -60,13 +64,16 @@ class Config implements \ArrayAccess, \Countable
                 return [];
             }
         }
+
         try {
             $config = require $configFilename;
         } catch (\Exception $ex) {
             throw new ConfigModuleException("Config \"{$configFilename}\" can't be load.", Errors::ERROR_CORE, $ex);
         }
+
         return (array) $config;
     }
+
     /**
      * @param $name
      * @return mixed|null
@@ -75,6 +82,7 @@ class Config implements \ArrayAccess, \Countable
     {
         return isset($this->_configValues[$name]) ? $this->_configValues[$name] : null;
     }
+
     /**
      * @param $name
      * @return bool
@@ -83,6 +91,7 @@ class Config implements \ArrayAccess, \Countable
     {
         return isset($this->_configValues[$name]);
     }
+
     /**
      * @param $name
      * @param $value
@@ -95,6 +104,7 @@ class Config implements \ArrayAccess, \Countable
             $this->_configValues[] = $value;
         }
     }
+
     /**
      * @param $name
      */
@@ -102,6 +112,7 @@ class Config implements \ArrayAccess, \Countable
     {
         unset($this->_configValues[$name]);
     }
+
     /**
      * @return string
      */
@@ -109,7 +120,9 @@ class Config implements \ArrayAccess, \Countable
     {
         return json_encode($this->_configValues, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
+
     # Array access
+
     /**
      * @param mixed $offset
      * @return bool
@@ -118,6 +131,7 @@ class Config implements \ArrayAccess, \Countable
     {
         return $this->__isset($offset);
     }
+
     /**
      * @param mixed $offset
      * @return mixed|null
@@ -126,6 +140,7 @@ class Config implements \ArrayAccess, \Countable
     {
         return $this->__get($offset);
     }
+
     /**
      * @param mixed $offset
      * @param mixed $value
@@ -134,6 +149,7 @@ class Config implements \ArrayAccess, \Countable
     {
         return $this->__set($offset, $value);
     }
+
     /**
      * @param mixed $offset
      */
@@ -141,13 +157,22 @@ class Config implements \ArrayAccess, \Countable
     {
         return $this->__unset($offset);
     }
-	
-	# countable
+
+    # Countable
     /**
      * @return int
      */
     public function count()
     {
         return count($this->_configValues);
+    }
+
+    # IteratorAggregate (foreach support)
+    /**
+     * @return ArrayIterator
+     */
+    public function getIterator()
+    {
+        return new \ArrayIterator($this->_configValues);
     }
 }
