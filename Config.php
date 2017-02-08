@@ -36,7 +36,7 @@ class Config implements \ArrayAccess, \Countable, \IteratorAggregate
      */
     public function __construct($configFilename, array $defaultValues = [], array $requiredParams = [], $isConfigRequired = true)
     {
-        $this->_configValues = $this->readConfig($configFilename);
+        $this->_configValues = $this->readConfig($configFilename, $isConfigRequired);
 
         // Подстановка дефолтных значений при их отсутствии
         foreach ($defaultValues as $param => $value) {
@@ -55,10 +55,10 @@ class Config implements \ArrayAccess, \Countable, \IteratorAggregate
      * @return array
      * @throws ConfigModuleException
      */
-    protected function readConfig($configFilename) :array
+    protected function readConfig($configFilename, $isConfigRequired) :array
     {
         if (!file_exists($configFilename) || !is_readable($configFilename)) {
-            if ($this->_isConfigRequired) {
+            if ($isConfigRequired) {
                 throw new ConfigModuleException("Config file \"{$configFilename}\" not found.", Errors::ERROR_CORE);
             } else {
                 return [];
